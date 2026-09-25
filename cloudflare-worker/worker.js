@@ -428,7 +428,7 @@ export default {
 
       if (old) {
         const stillValid = !old.expires_at || new Date(old.expires_at).getTime() > Date.now();
-        if (stillValid) {
+        if (stillValid && old.code.length === 3) {
           return Response.json({
             code: old.code,
             url: url.origin + '/' + old.code,
@@ -436,7 +436,9 @@ export default {
             expires_at: old.expires_at || null
           }, { headers: cors });
         }
-        await env.DB.prepare('DELETE FROM links WHERE code=?').bind(old.code).run();
+        if (!stillValid) {
+          await env.DB.prepare('DELETE FROM links WHERE code=?').bind(old.code).run();
+        }
       }
 
       let expiresAt = null;
