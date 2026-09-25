@@ -4,89 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Website Redirect</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #111827, #2563eb);
-  color: white;
+ margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center;
+ font-family:Arial,sans-serif; background:linear-gradient(135deg,#111827,#2563eb); color:white;
 }
 .container {
-  width: min(90%, 560px);
-  text-align: center;
-  padding: 40px;
-  background: rgba(255,255,255,0.12);
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
+ width:min(92%,560px); text-align:center; padding:40px; background:rgba(255,255,255,.12);
+ border-radius:20px; backdrop-filter:blur(10px);
 }
-h1 { margin-bottom: 15px; }
-p { opacity: .85; }
-.input-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-select, input {
-  padding: 15px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-}
-select { width: 110px; }
-input { flex: 1; }
-button {
-  margin-top: 15px;
-  width: 100%;
-  padding: 15px;
-  border: none;
-  border-radius: 10px;
-  background: white;
-  color: #2563eb;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: bold;
-}
-button:hover { opacity: .9; }
+h1{margin-bottom:15px} p{opacity:.85}
+.input-row {display:flex; gap:8px; margin-top:20px;}
+select,input,button {border:none; border-radius:10px; font-size:16px; padding:14px;}
+select {width:120px;}
+input {flex:1;}
+button {margin-top:15px; width:100%; background:white; color:#2563eb; cursor:pointer; font-weight:bold;}
+button:hover {opacity:.9;}
+#qrcode {margin:25px auto 0; background:white; padding:10px; width:max-content; border-radius:10px;}
+.small {font-size:13px; margin-top:10px;}
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>Website Redirect</h1>
-  <p>Enter a website address and jump directly.</p>
-
-  <div class="input-row">
-    <select id="protocol">
-      <option value="https://" selected>https://</option>
-      <option value="http://">http://</option>
-    </select>
-    <input id="url" placeholder="example.com">
-  </div>
-
-  <button onclick="redirect()">Go</button>
+<h1>Website Redirect</h1>
+<p>Enter a website address and jump directly.</p>
+<div class="input-row">
+<select id="protocol">
+<option value="https://" selected>https://</option>
+<option value="http://">http://</option>
+</select>
+<input id="url" placeholder="example.com">
 </div>
-
+<button onclick="redirect(false)">Go</button>
+<button onclick="redirect(true)">Generate QR Code</button>
+<div id="qrcode"></div>
+<p class="small">QR code contains the generated URL.</p>
+</div>
 <script>
-function redirect() {
-  let input = document.getElementById('url').value.trim();
-  let protocol = document.getElementById('protocol').value;
-
-  if (!input) return;
-
-  // Remove malformed or existing protocol prefixes
-  input = input.replace(/^\s*https?\s*:\s*\/\/?/i, '');
-  input = input.replace(/^\s*https?\s*:/i, '');
-
-  // Use selected protocol
-  window.location.href = protocol + input;
+function cleanUrl(){
+ let value=document.getElementById('url').value.trim();
+ value=value.replace(/^\s*(https?:\/\/|https?:|http:|https:)*/i,'');
+ return document.getElementById('protocol').value+value;
 }
-
-document.getElementById('url').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') redirect();
+function redirect(qr){
+ let finalUrl=cleanUrl();
+ if(!finalUrl || finalUrl.match(/^https?:\/\/$/)) return;
+ if(qr){
+  let box=document.getElementById('qrcode');
+  box.innerHTML='';
+  new QRCode(box,{text:finalUrl,width:220,height:220});
+ }else{
+  window.location.href=finalUrl;
+ }
+}
+document.getElementById('url').addEventListener('keydown',e=>{
+ if(e.key==='Enter') redirect(false);
 });
 </script>
 </body>
