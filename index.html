@@ -8,7 +8,7 @@
 <style>
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial;background:linear-gradient(135deg,#111827,#2563eb);color:white}
 .container{width:min(92%,560px);padding:40px;text-align:center;background:#ffffff20;border-radius:20px;backdrop-filter:blur(10px)}
-.input-row{display:flex;gap:8px;margin-top:20px}select,input,button{padding:14px;border:0;border-radius:10px;font-size:16px}select{width:120px}input{flex:1}button{width:100%;margin-top:15px;cursor:pointer;font-weight:bold;color:#2563eb;background:white}#short{margin-top:20px;word-break:break-all}#qrcode{margin:25px auto;background:white;padding:10px;width:max-content;border-radius:10px}
+.input-row{display:flex;gap:8px;margin-top:20px}select,input,button{padding:14px;border:0;border-radius:10px;font-size:16px}select{width:120px}input{flex:1}button{width:100%;margin-top:15px;cursor:pointer;font-weight:bold;color:#2563eb;background:white}#short,#info{margin-top:20px;word-break:break-all}#qrcode{margin:25px auto;background:white;padding:10px;width:max-content;border-radius:10px}
 </style>
 </head>
 <body>
@@ -22,7 +22,10 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 <button onclick="go()">Go</button>
 <button onclick="makeQR(currentUrl())">Generate QR Code</button>
 <button onclick="createShortLink()">Generate Short Link</button>
+<input id="shortCode" placeholder="Enter short code to query creation time">
+<button onclick="queryInfo()">Query Short Link Info</button>
 <div id="short"></div>
+<div id="info"></div>
 <div id="qrcode"></div>
 </div>
 <script>
@@ -35,6 +38,12 @@ async function createShortLink(){
  let r=await fetch(API_ENDPOINT+'/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:currentUrl()})});
  let d=await r.json();lastShort=d.url;
  document.getElementById('short').innerHTML='Short Link:<br>'+d.url+'<br><button onclick="copyShort()">Copy</button><button onclick="makeQR(lastShort)">QR Code</button>';
+}
+async function queryInfo(){
+ let code=document.getElementById('shortCode').value.trim();
+ let r=await fetch(API_ENDPOINT+'/info/'+code);
+ let d=await r.json();
+ document.getElementById('info').innerHTML='Code: '+d.code+'<br>Target: '+d.target_url+'<br>Created: '+d.created_at+'<br>Visits: '+d.visits;
 }
 function copyShort(){navigator.clipboard.writeText(lastShort)}
 document.getElementById('url').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
