@@ -318,7 +318,12 @@ export default {
           return adminJson({ error: 'Too many failed attempts. Try again later.' }, { status: 429 });
         }
 
-        const derived = await pbkdf2Hex(password, cfg.password_salt, Number(cfg.iterations));
+        const iterations = Number(cfg.iterations);
+        if (!Number.isInteger(iterations) || iterations < 1 || iterations > 100000) {
+          console.error('Invalid admin PBKDF2 iteration configuration');
+          return adminJson({ error: 'Administrator configuration needs repair.' }, { status: 503 });
+        }
+        const derived = await pbkdf2Hex(password, cfg.password_salt, iterations);
         const valid = constantTimeEqualHex(derived, cfg.password_hash);
 
         if (!valid) {
