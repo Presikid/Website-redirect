@@ -6,46 +6,51 @@
 <title>Website Redirect</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;font-family:Arial;background:linear-gradient(135deg,#111827,#2563eb);color:white}.container{width:min(92%,560px);padding:40px;text-align:center;background:#ffffff20;border-radius:20px;backdrop-filter:blur(10px)}.input-row{display:flex;gap:8px;margin-top:20px}select,input,button{padding:14px;border:0;border-radius:10px;font-size:16px}select{width:120px}input{flex:1}button{width:100%;margin-top:12px;cursor:pointer;font-weight:bold;color:#2563eb;background:white}#qrcode{margin:20px auto;background:white;padding:10px;width:max-content;border-radius:10px}.result{margin-top:15px;word-break:break-all}
+* { box-sizing: border-box; }
+body { margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; font-family:Arial,sans-serif; background:linear-gradient(135deg,#111827,#2563eb); color:white; }
+.container { width:min(92%,560px); text-align:center; padding:40px; background:rgba(255,255,255,.12); border-radius:20px; backdrop-filter:blur(10px); }
+.input-row { display:flex; gap:8px; margin-top:20px; }
+select,input,button { border:none; border-radius:10px; font-size:16px; padding:14px; }
+select { width:120px; }
+input { flex:1; }
+button { margin-top:15px; width:100%; background:white; color:#2563eb; cursor:pointer; font-weight:bold; }
+#qrcode { margin:25px auto 0; background:white; padding:10px; width:max-content; border-radius:10px; }
+#short { margin-top:20px; word-break:break-all; }
 </style>
 </head>
 <body>
 <div class="container">
 <h1>Website Redirect</h1>
-<p>Redirect, QR Code and Short Link</p>
+<p>Enter a website address and jump directly.</p>
 <div class="input-row">
-<select id="protocol"><option value="https://">https://</option><option value="http://">http://</option></select>
+<select id="protocol"><option value="https://" selected>https://</option><option value="http://">http://</option></select>
 <input id="url" placeholder="example.com">
 </div>
-<button onclick="redirectUrl()">Go</button>
-<button onclick="makeQR()">Generate QR Code</button>
+<button onclick="go(false)">Go</button>
+<button onclick="go(true)">Generate QR Code</button>
 <button onclick="createShortLink()">Generate Short Link</button>
-<div id="short" class="result"></div>
+<div id="short"></div>
 <div id="qrcode"></div>
 </div>
 <script>
-// Replace with your Worker URL after custom domain routing is configured
-const API_ENDPOINT='https://website-redirect-worker.workers.dev';
+const API_ENDPOINT='https://website-redirect-worker.presikidgame.workers.dev';
 function cleanUrl(){
  let v=document.getElementById('url').value.trim();
- v=v.replace(/^\s*(https?:\/\/|https?:|http:|https:)*/i,'');
+ v=v.replace(/^(https?:\/\/|https?:|http:)/i,'');
  return document.getElementById('protocol').value+v;
 }
-function redirectUrl(){
+function go(qr){
  const u=cleanUrl();
- if(u!=='https://'&&u!=='http://') location.href=u;
-}
-function makeQR(){
- const box=document.getElementById('qrcode');box.innerHTML='';
- new QRCode(box,{text:cleanUrl(),width:220,height:220});
+ if(qr){document.getElementById('qrcode').innerHTML='';new QRCode(document.getElementById('qrcode'),{text:u,width:220,height:220});}
+ else window.location.href=u;
 }
 async function createShortLink(){
- const target=cleanUrl();
- const res=await fetch(API_ENDPOINT+'/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:target})});
- const data=await res.json();
- document.getElementById('short').innerHTML='Short Link: '+data.short;
+ const u=cleanUrl();
+ const r=await fetch(API_ENDPOINT+'/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})});
+ const data=await r.json();
+ document.getElementById('short').innerHTML='Short Link:<br>'+data.url;
 }
-document.getElementById('url').addEventListener('keydown',e=>{if(e.key==='Enter')redirectUrl()});
+document.getElementById('url').addEventListener('keydown',e=>{if(e.key==='Enter')go(false);});
 </script>
 </body>
 </html>
