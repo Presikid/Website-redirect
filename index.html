@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Redirect</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #111827, #2563eb);
+  color: white;
+}
+.container {
+  width: min(90%, 520px);
+  text-align: center;
+  padding: 40px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+h1 { margin-bottom: 15px; }
+p { opacity: .85; }
+input {
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+}
+button {
+  margin-top: 15px;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: white;
+  color: #2563eb;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { opacity: .9; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Website Redirect</h1>
+  <p>Enter a website address and jump directly.</p>
+  <input id="url" placeholder="example.com">
+  <button onclick="redirect()">Go</button>
+</div>
+<script>
+function redirect() {
+  let url = document.getElementById('url').value.trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+  window.location.href = url;
+}
+
+document.getElementById('url').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') redirect();
+});
+</script>
+</body>
+</html>
