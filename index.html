@@ -17,7 +17,7 @@ body {
   color: white;
 }
 .container {
-  width: min(90%, 520px);
+  width: min(90%, 560px);
   text-align: center;
   padding: 40px;
   background: rgba(255,255,255,0.12);
@@ -26,14 +26,19 @@ body {
 }
 h1 { margin-bottom: 15px; }
 p { opacity: .85; }
-input {
-  width: 100%;
-  padding: 15px;
+.input-row {
+  display: flex;
+  gap: 10px;
   margin-top: 20px;
+}
+select, input {
+  padding: 15px;
   border: none;
   border-radius: 10px;
   font-size: 16px;
 }
+select { width: 110px; }
+input { flex: 1; }
 button {
   margin-top: 15px;
   width: 100%;
@@ -53,17 +58,31 @@ button:hover { opacity: .9; }
 <div class="container">
   <h1>Website Redirect</h1>
   <p>Enter a website address and jump directly.</p>
-  <input id="url" placeholder="example.com">
+
+  <div class="input-row">
+    <select id="protocol">
+      <option value="https://" selected>https://</option>
+      <option value="http://">http://</option>
+    </select>
+    <input id="url" placeholder="example.com">
+  </div>
+
   <button onclick="redirect()">Go</button>
 </div>
+
 <script>
 function redirect() {
-  let url = document.getElementById('url').value.trim();
-  if (!url) return;
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-  window.location.href = url;
+  let input = document.getElementById('url').value.trim();
+  let protocol = document.getElementById('protocol').value;
+
+  if (!input) return;
+
+  // Remove malformed or existing protocol prefixes
+  input = input.replace(/^\s*https?\s*:\s*\/\/?/i, '');
+  input = input.replace(/^\s*https?\s*:/i, '');
+
+  // Use selected protocol
+  window.location.href = protocol + input;
 }
 
 document.getElementById('url').addEventListener('keydown', function(e) {
