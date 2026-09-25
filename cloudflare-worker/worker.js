@@ -147,7 +147,12 @@ const CONTROL_HTML = String.raw`<!doctype html>
 
     <div class="toolbar">
       <h2 style="margin:0">Links</h2>
-      <button id="refreshBtn" class="ghost">Refresh</button>
+      <div class="row">
+        <input id="searchInput" type="search" placeholder="Short code or full short URL" aria-label="Search short links">
+        <button id="searchBtn" class="ghost">Search</button>
+        <button id="clearSearchBtn" class="ghost">Clear</button>
+        <button id="refreshBtn" class="ghost">Refresh</button>
+      </div>
     </div>
     <div class="tablewrap">
       <table>
@@ -170,6 +175,7 @@ const loginView=document.getElementById('loginView');
 const dashboard=document.getElementById('dashboard');
 const loginMsg=document.getElementById('loginMsg');
 const panelMsg=document.getElementById('panelMsg');
+let searchTerm='';
 
 async function api(path,options){
   const r=await fetch(path,options||{});
@@ -204,12 +210,15 @@ async function logout(){
 }
 async function refreshAll(){
   message(panelMsg,'',true);
-  const [stats,links]=await Promise.all([api('/control/api/stats'),api('/control/api/links?limit=200&offset=0')]);
+  const params=new URLSearchParams({limit:'200',offset:'0'});
+  if(searchTerm)params.set('search',searchTerm);
+  const [stats,links]=await Promise.all([api('/control/api/stats'),api('/control/api/links?'+params)]);
   document.getElementById('linkCount').textContent=stats.links;
   document.getElementById('visitCount').textContent=stats.visits;
   document.getElementById('todayCount').textContent=stats.today;
   const body=document.getElementById('linksBody');
   body.innerHTML='';
+  if(!links.links.length && searchTerm)message(panelMsg,'No short links found.',false);
   for(const row of links.links){
     const tr=document.createElement('tr');
     const values=[row.code,row.target_url,row.created_at,row.expires_at||'Never',row.visits];
@@ -249,7 +258,19 @@ async function cleanAll(){
 document.getElementById('loginBtn').addEventListener('click',login);
 document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')login()});
 document.getElementById('logoutBtn').addEventListener('click',logout);
-document.getElementById('refreshBtn').addEventListener('click',refreshAll);
+document.getElementById('refreshBtn').addEventListener('click',function(){refreshAll().catch(e=>message(panelMsg,e.message,false))});
+document.getElementById('searchBtn').addEventListener('click',function(){
+  searchTerm=document.getElementById('searchInput').value.trim();
+  refreshAll().catch(e=>message(panelMsg,e.message,false));
+});
+document.getElementById('searchInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter')document.getElementById('searchBtn').click();
+});
+document.getElementById('clearSearchBtn').addEventListener('click',function(){
+  searchTerm='';
+  document.getElementById('searchInput').value='';
+  refreshAll().catch(e=>message(panelMsg,e.message,false));
+});
 document.getElementById('cleanBtn').addEventListener('click',cleanAll);
 checkSession();
 </script>
@@ -356,9 +377,27 @@ export default {
       if (request.method === 'GET' && url.pathname === '/control/api/links') {
         const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 100, 1), 200);
         const offset = Math.max(Number(url.searchParams.get('offset')) || 0, 0);
-        const result = await env.DB.prepare(
-          'SELECT code,target_url,created_at,expires_at,visits FROM links ORDER BY id DESC LIMIT ? OFFSET ?'
-        ).bind(limit, offset).all();
+        let search = (url.searchParams.get('search') || '').trim();
+        if (search.length > 256) return adminJson({ error: 'Search is too long.' }, { status: 400 });
+        if (/^(?:https?:\/\/)?s\.presikid\.com\//i.test(search)) {
+          try {
+            const shortUrl = new URL(/^https?:\/\//i.test(search) ? search : 'https://' + search);
+            if (shortUrl.hostname.toLowerCase() !== 's.presikid.com') throw new Error('Invalid host');
+            search = decodeURIComponent(shortUrl.pathname.slice(1));
+          } catch {
+            return adminJson({ error: 'Invalid short link.' }, { status: 400 });
+          }
+        }
+        if (search && !/^[0-9A-Za-z]{1,32}$/.test(search)) {
+          return adminJson({ error: 'Enter a short code or full short link.' }, { status: 400 });
+        }
+        const result = search
+          ? await env.DB.prepare(
+              'SELECT code,target_url,created_at,expires_at,visits FROM links WHERE instr(lower(code),lower(?))>0 ORDER BY id DESC LIMIT ? OFFSET ?'
+            ).bind(search, limit, offset).all()
+          : await env.DB.prepare(
+              'SELECT code,target_url,created_at,expires_at,visits FROM links ORDER BY id DESC LIMIT ? OFFSET ?'
+            ).bind(limit, offset).all();
         return adminJson({ links: result.results || [] });
       }
 
