@@ -34,22 +34,6 @@ function constantTimeEqualHex(a, b) {
   return diff === 0;
 }
 
-async function pbkdf2Hex(password, saltHex, iterations) {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    'PBKDF2',
-    false,
-    ['deriveBits']
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: hexToBytes(saltHex), iterations, hash: 'SHA-256' },
-    key,
-    256
-  );
-  return bytesToHex(new Uint8Array(bits));
-}
-
 async function hmacHex(secretHex, message) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -73,7 +57,7 @@ function getCookie(request, name) {
 
 async function getAdminConfig(env) {
   return env.DB.prepare(
-    'SELECT password_salt,password_hash,iterations,session_secret FROM admin_config WHERE id=1'
+    'SELECT password_salt,password_hash,session_secret FROM admin_config WHERE id=1'
   ).first();
 }
 
@@ -318,12 +302,11 @@ export default {
           return adminJson({ error: 'Too many failed attempts. Try again later.' }, { status: 429 });
         }
 
-        const iterations = Number(cfg.iterations);
-        if (!Number.isInteger(iterations) || iterations < 1 || iterations > 100000) {
-          console.error('Invalid admin PBKDF2 iteration configuration');
+        if (!env.ADMIN_PASSWORD_KEY) {
+          console.error('Missing ADMIN_PASSWORD_KEY binding');
           return adminJson({ error: 'Administrator configuration needs repair.' }, { status: 503 });
         }
-        const derived = await pbkdf2Hex(password, cfg.password_salt, iterations);
+        const derived = await hmacHex(env.ADMIN_PASSWORD_KEY, cfg.password_salt + ':' + password);
         const valid = constantTimeEqualHex(derived, cfg.password_hash);
 
         if (!valid) {
